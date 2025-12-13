@@ -127,6 +127,8 @@ namespace chaiscript
         {
         }
 
+        Data(const Data &) = delete;
+        
         Data &operator=(const Data &rhs)
         {
           m_type_info = rhs.m_type_info;
@@ -143,8 +145,6 @@ namespace chaiscript
 
           return *this;
         }
-
-        Data(const Data &) = delete;
 
         Data(Data &&) = default;
         Data &operator=(Data &&rhs) = default;
@@ -323,112 +323,9 @@ namespace chaiscript
         std::swap(m_data, rhs.m_data);
       }
 
-      Data &operator=(const Data &rhs) {
-        m_type_info = rhs.m_type_info;
-        m_obj = rhs.m_obj;
-        m_is_ref = rhs.m_is_ref;
-        m_data_ptr = rhs.m_data_ptr;
-        m_const_data_ptr = rhs.m_const_data_ptr;
-        m_return_value = rhs.m_return_value;
-
-        if (rhs.m_attrs) {
-          m_attrs = std::make_unique<std::map<std::string, std::shared_ptr<Data>>>(*rhs.m_attrs);
-        }
-
-        return *this;
-      }
-
-      Data(const Data &) = delete;
-
-      Data(Data &&) = default;
-      Data &operator=(Data &&rhs) = default;
-
-      Type_Info m_type_info;
-      chaiscript::detail::Any m_obj;
-      void *m_data_ptr;
-      const void *m_const_data_ptr;
-      std::unique_ptr<std::map<std::string, std::shared_ptr<Data>>> m_attrs;
-      bool m_is_ref;
-      bool m_return_value;
-    };
-
-    struct Object_Data {
-      static auto get(Boxed_Value::Void_Type, bool t_return_value) {
-        return std::make_shared<Data>(detail::Get_Type_Info<void>::get(), chaiscript::detail::Any(), false, nullptr, t_return_value);
-      }
-
-      template<typename T>
-      static auto get(const std::shared_ptr<T> *obj, bool t_return_value) {
-        return get(*obj, t_return_value);
-      }
-
-      template<typename T>
-      static auto get(const std::shared_ptr<T> &obj, bool t_return_value) {
-        return std::make_shared<Data>(detail::Get_Type_Info<T>::get(), chaiscript::detail::Any(obj), false, obj.get(), t_return_value);
-      }
-
-      template<typename T>
-      static auto get(std::shared_ptr<T> &&obj, bool t_return_value) {
-        auto ptr = obj.get();
-        return std::make_shared<Data>(detail::Get_Type_Info<T>::get(), chaiscript::detail::Any(std::move(obj)), false, ptr, t_return_value);
-      }
-
-      template<typename T>
-      static auto get(T *t, bool t_return_value) {
-        return get(std::ref(*t), t_return_value);
-      }
-
-      template<typename T>
-      static auto get(const T *t, bool t_return_value) {
-        return get(std::cref(*t), t_return_value);
-      }
-
-      template<typename T>
-      static auto get(std::reference_wrapper<T> obj, bool t_return_value) {
-        auto p = &obj.get();
-        return std::make_shared<Data>(detail::Get_Type_Info<T>::get(), chaiscript::detail::Any(std::move(obj)), true, p, t_return_value);
-      }
-
-      template<typename T>
-      static auto get(std::unique_ptr<T> &&obj, bool t_return_value) {
-        auto ptr = obj.get();
-        return std::make_shared<Data>(detail::Get_Type_Info<T>::get(),
-                                      chaiscript::detail::Any(std::make_shared<std::unique_ptr<T>>(std::move(obj))),
-                                      true,
-                                      ptr,
-                                      t_return_value);
-      }
-
-      template<typename T>
-      static auto get(T t, bool t_return_value) {
-        auto p = std::make_shared<T>(std::move(t));
-        auto ptr = p.get();
-        return std::make_shared<Data>(detail::Get_Type_Info<T>::get(), chaiscript::detail::Any(std::move(p)), false, ptr, t_return_value);
-      }
-
-      static std::shared_ptr<Data> get() { return std::make_shared<Data>(Type_Info(), chaiscript::detail::Any(), false, nullptr, false); }
-    };
-
-  public:
-    /// Basic Boxed_Value constructor
-    template<typename T, typename = std::enable_if_t<!std::is_same_v<Boxed_Value, std::decay_t<T>>>>
-    explicit Boxed_Value(T &&t, bool t_return_value = false)
-        : m_data(Object_Data::get(std::forward<T>(t), t_return_value)) {
-    }
-
-    /// Unknown-type constructor
-    Boxed_Value() = default;
-
-    Boxed_Value(Boxed_Value &&) = default;
-    Boxed_Value &operator=(Boxed_Value &&) = default;
-    Boxed_Value(const Boxed_Value &) = default;
-    Boxed_Value &operator=(const Boxed_Value &) = default;
-
-    void swap(Boxed_Value &rhs) noexcept { std::swap(m_data, rhs.m_data); }
-
-    /// Copy the values stored in rhs.m_data to m_data.
-    /// m_data pointers are not shared in this case
-    Boxed_Value assign(const Boxed_Value &rhs) noexcept {
+      /// Copy the values stored in rhs.m_data to m_data.
+      /// m_data pointers are not shared in this case
+      Boxed_Value assign(const Boxed_Value &rhs) noexcept {
       (*m_data) = (*rhs.m_data);
       return *this;
     }
